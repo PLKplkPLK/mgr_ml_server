@@ -3,7 +3,10 @@ import requests
 url = "http://localhost:8008/predict"
 data = {
     "instances": [
-        {"filepath": "http://t0.gstatic.com/licensed-image?q=tbn:ANd9GcSdf6ERvaPyckc-PAJNBsK3MbSe-ZU57YOsxLsh0BXa1yZ2kWGhzFp4T1JnQUVsqMkb652lX0fFqtHvvjHx5ig"}
+        {
+            "filepath": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxSyhtXpCD4XuWXtf7BbfC-bYMbNlKLWJjWAPmEjOGaWbkUD61Q6dvnBbhkwH57Pidg5vaOGVgFF2pIfNiIuZorg",
+            "country": "POL"
+        }
     ]
 }
 
