@@ -1,0 +1,3 @@
+speciesnet[server]
+fastapi
+liteserve
