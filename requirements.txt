@@ -1,3 +1,9 @@
-speciesnet[server]
-fastapi
-litserve
+pandas
+numpy
+
+timm
+torch
+torchvision
+megadetector
+
+pillow

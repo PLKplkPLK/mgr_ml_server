@@ -1,21 +1,3 @@
-# mgr_ml_server
-Server to run classification ml model for an app.
+Server to run [classification model](https://github.com/PLKplkPLK/mgr) for the animal classification platform.
 
-## To run
-```
-.\.venv\Scripts\activate
-python -m speciesnet.scripts.run_server --port=8006 --extra_fields=country
-```
-
-Now send POST request to it with
-
-```
-data = {
-    "instances": [
-        {
-            "filepath": "https://link.to/image.jpg",
-            "country": "POL"
-        }
-    ]
-}
-```
+Main file is `server.py`
