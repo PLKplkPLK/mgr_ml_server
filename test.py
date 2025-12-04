@@ -17,7 +17,7 @@ def get_image(file_path: str) -> bytes:
 
 
 url = "http://localhost:8006/predict"
-image_webp = get_image('test.jpg')
+image_webp = get_image('test3.jpeg')
 
 files = {"image": ("test.webp", image_webp, "image/webp")}
 response = requests.post(url, files=files, timeout=30)#.json()

@@ -1,13 +1,14 @@
 import torch
+from megadetector.detection.pytorch_detector import PTDetector
 from torchvision import transforms
 from PIL import Image
-
-from models.classifier import Deepfaune
+from torch.nn import Module
 
 
 class Models():
-    detector: int | None
-    classifier: Deepfaune | None
+    detector: PTDetector
+    classifier: Module
+    transforms: transforms.Compose
 
 
 def crop_normalized_bbox_square(img: Image.Image, bbox: list[float]) -> Image.Image:

@@ -3,13 +3,14 @@ import gc
 from contextlib import asynccontextmanager
 
 import torch
+import numpy as np
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from PIL import Image
 
-from helpers import Models
-# from models.detector import Detector
-from models.classifier import Deepfaune
+from helpers import Models, crop_normalized_bbox_square
+from classifier.classifier import Deepfaune, class_names
+from megadetector.detection import run_detector
 
 
 models = Models()
@@ -20,9 +21,16 @@ async def lifespan(app: FastAPI):
     This replaces @app.on_event("startup") and @app.on_event("shutdown").
     It runs once at startup and once at shutdown.
     """
-    print("Loading models...")
-    models.detector = None #Detector()
-    models.classifier = Deepfaune('models/deepfaune_polish_lr4_checkpoint.pt')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Loading models onto {device}...")
+    # Detector
+    models.detector = run_detector.load_detector('MDV5A') # type: ignore
+    # Classifier
+    model_wrapper = Deepfaune('classifier/deepfaune_polish_lr4_checkpoint.pt')
+    classifier = model_wrapper.model
+    classifier.to(device)
+    models.classifier = classifier
+    models.transforms = model_wrapper.transforms
     print("Models loaded.")
 
     yield
@@ -44,21 +52,30 @@ async def predict(image: UploadFile = File(...)):
         raise HTTPException(400, "Invalid image file")
 
     # 1. Run detector
-    detections = models.detector.predict(pil_image)
+    detections = models.detector.generate_detections_one_image(pil_image)
+    if not detections:
+        return JSONResponse(content={"category": 0})
+    detections = detections.get('detections')
+    detection = max(detections, key=lambda d: d["conf"])
+    bbox = detection.get('bbox')
+    category = detection.get('category')
+    if int(category) != 1:
+        return JSONResponse(content={"category": 0})
+    
+    # 2. Crop, transform and classify
+    cropped_image = crop_normalized_bbox_square(pil_image, bbox)
+    cropped_image_tensor = models.transforms(cropped_image).unsqueeze(0) # type: ignore
+    logits = models.classifier.predict(cropped_image_tensor, withsoftmax=False) # type: ignore
+    probabilities = torch.softmax(torch.tensor(logits), dim=1).numpy()
+    predicted_idx = np.argmax(logits[0])
+    confidence = float(probabilities[0, predicted_idx])
+    species = class_names[predicted_idx]
 
-    results = []
-    for det in detections:
-        x1, y1, x2, y2 = det["bbox"]
+    results = {
+        "category": 1,
+        "bbox": bbox,
+        "detected_animal": species,
+        "confidence": confidence
+    }
 
-        # 2. Crop and classify
-        crop = pil_image.crop((x1, y1, x2, y2))
-        classification = models.classifier.classify(crop)
-
-        results.append({
-            "bbox": det["bbox"],
-            "detection_confidence": det["confidence"],
-            "class": classification["label"],
-            "class_confidence": classification["confidence"]
-        })
-
-    return JSONResponse(content={"detections": results})
+    return JSONResponse(content=results)

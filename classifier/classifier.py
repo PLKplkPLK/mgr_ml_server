@@ -58,8 +58,6 @@ class Model(nn.Module):
 
     def predict(self, data, withsoftmax=True):
         """
-        Predict on test DataLoader
-        :param test_loader: test dataloader: torch.utils.data.DataLoader
         :return: numpy array of predictions without soft max
         """
         self.eval()
