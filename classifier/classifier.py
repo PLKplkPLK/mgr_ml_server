@@ -25,7 +25,7 @@ class Deepfaune:
             transforms.Resize(
                 size=(CROP_SIZE, CROP_SIZE),
                 interpolation=transforms.InterpolationMode.BICUBIC,
-                max_size=None, antialias=False),
+                max_size=None),
             transforms.ToTensor(),
             transforms.Normalize(mean=torch.tensor([0.4850, 0.4560, 0.4060]),
                                  std=torch.tensor([0.2290, 0.2240, 0.2250]))])
