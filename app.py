@@ -55,6 +55,15 @@ async def predict(image: UploadFile = File(...)):
         return JSONResponse(content={"category": 0})
     detections = detections.get('detections')
     detection = max(detections, key=lambda d: d["conf"])
+    if detection.get('conf') < 0.05:
+        results = {
+            "category": 0,
+            "bbox": [0, 0, 0, 0],
+            "detected_animal": 'empty',
+            "confidence": 0
+        }
+        return JSONResponse(content=results)
+
     bbox = detection.get('bbox')
     category = detection.get('category')
     if int(category) != 1:
