@@ -35,8 +35,6 @@ async def lifespan(app: FastAPI):
 
     yield
     gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
     print("Shutting down inference server...")
 
 
