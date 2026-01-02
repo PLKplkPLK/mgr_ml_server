@@ -15,6 +15,7 @@ from megadetector.detection import run_detector
 
 models = Models()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -24,7 +25,7 @@ async def lifespan(app: FastAPI):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Loading models onto {device}...")
     # Detector
-    models.detector = run_detector.load_detector('MDV5A') # type: ignore
+    models.detector = run_detector.load_detector('MDV5A')  # type: ignore
     # Classifier
     model_wrapper = Deepfaune('classifier/deepfaune_polish_lr4_checkpoint.pt')
     classifier = model_wrapper.model
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
 
 @app.post("/predict")
 async def predict(image: UploadFile = File(...)):
@@ -68,21 +70,28 @@ async def predict(image: UploadFile = File(...)):
     category = detection.get('category')
     if int(category) != 1:
         return JSONResponse(content={"category": 0})
-    
+
     # 2. Crop, transform and classify
     cropped_image = crop_normalized_bbox_square(pil_image, bbox)
-    cropped_image_tensor = models.transforms(cropped_image).unsqueeze(0) # type: ignore
-    logits = models.classifier.predict(cropped_image_tensor, withsoftmax=False) # type: ignore
+    cropped_image_tensor = models.transforms(cropped_image).unsqueeze(0)  # type: ignore
+    logits = models.classifier.predict(cropped_image_tensor, withsoftmax=False)  # type: ignore
     probabilities = torch.softmax(torch.tensor(logits), dim=1).numpy()
-    predicted_idx = np.argmax(logits[0])
-    confidence = float(probabilities[0, predicted_idx])
-    species = class_names[predicted_idx]
+
+    # 3. Send predictions
+    top2 = np.argsort(probabilities[0])[-2:][::-1]
+    idx1, idx2 = top2
+    species = class_names[idx1]
+    species_2 = class_names[idx2]
+    confidence = float(probabilities[0, idx1])
+    confidence_2 = float(probabilities[0, idx2])
 
     results = {
         "category": 1,
         "bbox": bbox,
         "detected_animal": species,
-        "confidence": confidence
+        "confidence": confidence,
+        "detected_animal_2": species_2,
+        "confidence_2": confidence_2
     }
 
     return JSONResponse(content=results)
