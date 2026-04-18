@@ -5,13 +5,16 @@ from PIL import Image
 from torch.nn import Module
 
 
-class Models():
+class Models:
+    """Container for model instances."""
     detector: PTDetector
     classifier: Module
     transforms: transforms.Compose
 
 
-def crop_normalized_bbox_square(img: Image.Image, bbox: list[float]) -> Image.Image:
+def crop_normalized_bbox_square(
+    img: Image.Image, bbox: list[float]
+) -> Image.Image:
     """
     img: PIL.Image opened image
     bbox: list [x, y, w, h], normalized 0-1
@@ -52,17 +55,32 @@ def crop_normalized_bbox_square(img: Image.Image, bbox: list[float]) -> Image.Im
 
     return img.crop((new_left, new_top, new_right, new_bottom))
 
-def predict_batch(model, pil_images: list[Image.Image], transform: transforms.Compose,
-                  class_names: list[str], top_k: int=5):
+
+def predict_batch(
+    model,
+    pil_images: list[Image.Image],
+    transform: transforms.Compose,
+    class_names: list[str],
+    top_k: int = 5,
+) -> list[list[tuple[str, float]]]:
     """
-    pil_images: list of PIL.Image
-    returns: list of list of (classname, prob)
+    Perform batch prediction on a list of PIL images using the given model.
+
+    Args:
+        model: The neural network model for classification.
+        pil_images: List of PIL images to classify.
+        transform: Image transformation pipeline.
+        class_names: List of class names corresponding to model outputs.
+        top_k: Number of top predictions to return per image.
+
+    Returns:
+        List of lists with tuples of (class_name, probability) for top_k preds.
     """
     model.eval()
 
     # Transform images → stack into a batch
     xs = [transform(im) for im in pil_images]  # list of tensors (3, 480, 480)
-    x = torch.stack(xs).to('cuda')                   # (B, 3, 480, 480)
+    x = torch.stack(xs).to("cuda")  # (B, 3, 480, 480)
 
     with torch.no_grad():
         logits = model(x)
